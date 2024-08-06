@@ -120,38 +120,40 @@ list_unique_classes = ['Organic Polymers', 'Organic acids and derivatives',
 #########
 
 
-df = pd.read_pickle('Data/dataset_filtered.pkl')
+df = pd.read_csv('bbbp.csv')
 
-value_counts = df['Superclass'].value_counts()
-selected_values = value_counts[value_counts > 100]
-
-filtered_df = df[df['Superclass'].isin(selected_values.index)]
-
-filtered_df
-
+df
 
 #generate_graph(data.iloc[30].SMILES, data.iloc[30].Superclass)
 
 
-superclase2double = dict(zip(list_unique_classes, range(len(list_unique_classes))))
 
 from torch_geometric.data import Data
 from torch_geometric.loader import DataLoader
 
-df['data_object'] = df.apply(lambda x: generate_graph(x['SMILES'], x['Superclass']), axis=1)
 
-#filtered_df['data_object'] = filtered_df.apply(lambda x: generate_graph(x['SMILES'], x['Superclass']), axis=1)
+df
+df['data_object'] = df.apply(lambda x: generate_graph(x['smiles']), axis=1)
+
+
+
+train_df, valid_df = train_test_split(df, test_size=0.2, random_state=42, stratify=df['p_np'])
+
+train_dataset = CustomDatasetIteratorGraph(train_df)
+
+
+df
 
 #dataset = filtered_df
 
 from sklearn.model_selection import train_test_split
 
-X_split = filtered_df.data_object
-y_split = filtered_df.Superclass
+X_split = df.data_object
+y_split = df.p_np
 
 X_train, X_val, _, _ = train_test_split(X_split, y_split, test_size=0.2, stratify= y_split)
 
-number_classes = len(filtered_df.Superclass.unique())
+#number_classes = len(filtered_df.Superclass.unique())
 
 # dataset
 # data
@@ -174,12 +176,11 @@ number_classes = len(filtered_df.Superclass.unique())
 
 ### WORKING IN THIS NEW VERSION
 item = 10 
-smiles = data.iloc[item].SMILES
-superclass =  data.iloc[item].Superclass
+smiles = df.iloc[item].smiles
 atom = molecule.GetAtoms()[0]
+bbbp = df.p_np[item]
 
-
-def generate_graph(smiles, superclass):
+def generate_graph(smiles, bbbp):
     molecule = Chem.MolFromSmiles(smiles) # Construct a molecule from a SMILES string
     # if not molecule:# this should not be needed it prefilter correct
     #     return None
@@ -271,7 +272,8 @@ def generate_graph(smiles, superclass):
 
     edge_attr = torch.tensor(edge_attr, dtype=torch.float) 
 
-    label = superclase2double.get(superclass)
+    label = bbbp
+
     # generate Data object
     # Create a PyTorch Geometric Data object
     data = Data(x=torch.tensor(node_features, dtype=torch.float),

@@ -36,8 +36,12 @@ superclase2double = dict(zip(list_unique_classes, range(len(list_unique_classes)
 
 #
 
-fps = [fingerpring_from_smiles(smiles) for smiles in data.SMILES.tolist()]
-labels = [superclase2double.get(label) for label in data.Superclass.tolist()]
+fps = [fingerpring_from_smiles(smiles) for smiles in df.smiles.tolist()]
+labels = df.p_np.tolist() #[superclase2double.get(label) for label in data.Superclass.tolist()]
+
+
+# fps = [fingerpring_from_smiles(smiles) for smiles in data.SMILES.tolist()]
+# labels = [superclase2double.get(label) for label in data.Superclass.tolist()]
 
 
 from sklearn.model_selection import train_test_split
@@ -86,3 +90,17 @@ model = final_rndfst.fit(X_train, y_train)
 predictionforest = model.predict(X_test)
 acc1 = accuracy_score(y_test, predictionforest); acc1
 print(f'Accuracy {acc1:.4f}')
+
+
+
+
+
+
+
+df = pd.read_csv('bbbp.csv')
+
+
+df
+
+# g
+

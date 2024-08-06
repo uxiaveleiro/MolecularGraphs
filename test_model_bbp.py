@@ -7,29 +7,32 @@ from torch_geometric.nn import global_mean_pool
 
 import matplotlib.pyplot as plt
 import time
-
+import random
+from tqdm import tqdm
 from torch_geometric.loader import DataLoader
 
 torch.manual_seed(12345)
 
 device = 'cpu' #'cuda'
-for _ in dataset:
+for _ in X_val:
     _.to(device)
 
+
+from rdkit import RDLogger        
+RDLogger.DisableLog('rdApp.*')    
 #dataset = dataset.data_object.tolist()
 
-dataset = [data.to(device) for data in dataset.data_object.tolist()]
+# dataset = [data.to(device) for data in dataset.data_object.tolist()]
 
 #dataset[42].is_cuda
 
-import random
 
-random.shuffle(dataset)
+# random.shuffle(dataset)
 
-split_cut = round(len(dataset)*0.2);split_cut
+# split_cut = round(len(dataset)*0.2);split_cut
 
-test_dataset = dataset[:940]
-train_dataset = dataset[940:]
+# test_dataset = dataset[:940]
+# train_dataset = dataset[940:]
 
 train_dataset = [data.to(device) for data in X_train.tolist()]
 test_dataset = [data.to(device) for data in X_val.tolist()]
@@ -89,6 +92,7 @@ def test(loader):
         #labels.append(data.y)
         correct_ = correct / len(loader.dataset)
     epoch_f1 = f1_score(y_true=all_labels, y_pred=all_preds, average=None)
+    #acc1 = accuracy_score(y_true=all_labels, y_pred=all_preds)
     return correct_, epoch_f1  # Derive ratio of correct predictions.
 
 
@@ -110,7 +114,7 @@ class GCN(torch.nn.Module):
         self.conv3 = TransformerConv(hidden_channels*nheads, hidden_channels, edge_dim=edge_dim, dropout=0.2, heads=nheads)
         #self.conv4 = TransformerConv(hidden_channels, hidden_channels, edge_dim=edge_dim, dropout=0.2, heads=1)
         self.lin1 = Linear(hidden_channels*nheads, hidden_channels) # harcoded now
-        self.lin2 = Linear(hidden_channels, 19) # harcoded now
+        self.lin2 = Linear(hidden_channels, 2) # harcoded now
 
         self.dropout = Dropout(p=0.25)
 
@@ -142,7 +146,7 @@ class GCN(torch.nn.Module):
 
 import pandas as pd
 
-hd = 30 
+hd = 15
 
 # df_res = pd.DataFrame(columns=['hd', 'train_acc', 'test_acc'])
 
@@ -155,7 +159,7 @@ optimizer = torch.optim.Adam(model.parameters(), lr=0.003) # it was to 0.003
 criterion = torch.nn.CrossEntropyLoss()
 
 
-max_epochs = 801
+max_epochs = 201
 acc_test_values, f1_test_values = [], []
 acc_train_values, f1_train_values = [], []
 list_loss = []
@@ -167,27 +171,28 @@ plt.xlim(0., max_epochs+1)
 plt.hlines(0.5, xmin=0, xmax=max_epochs,color='grey', linestyles='dashed', alpha=0.5)
 plt.hlines(0.6795, xmin=0, xmax=max_epochs, color='orange', linestyles='dashed', alpha=0.8, label='Baseline RF & MFP')
 
-fig_name = 'tmp_results.png'
+fig_name = 'tmp_results_bbbp.png'
+
 init = time.time()
 print("Training....")
-for epoch in range(1, max_epochs):
+for epoch in tqdm(range(1, max_epochs)):
     loss = train()
     train_acc, train_f1 = test(train_loader)
-    test_acc, test_f1= test(test_loader)
+    # test_acc, test_f1= test(test_loader)
 
-    acc_test_values.append(test_acc)
+    # acc_test_values.append(test_acc)
     acc_train_values.append(train_acc)
     list_loss.append(loss)
     #f1_train_values.append(train_f1)
     #åf1_test_values.append(test_f1)
 
-    if epoch%10==0:
-        print(f'Epoch: {epoch:03d}, Loss {loss:.4f}, Train Acc: {train_acc:.4f}, Test Acc: {test_acc:.4f}')
-        plt.plot(acc_test_values, 'r', label='test')
-        # plt.plot(f1_test_values, 'r--', label='test')
-        plt.plot(acc_train_values, 'k', label='train')
-        # plt.plot(f1_train_values, 'k--', label='train')
-        plt.savefig(fig_name, dpi=330, bbox_inches='tight', pad_inches = 0.25)
+    # if epoch%10==0:
+    print(f'Epoch: {epoch:03d}, Loss {loss:.4f}, Train Acc: {train_acc:.4f}, Test Acc: {test_acc:.4f}')
+        # plt.plot(acc_test_values, 'r', label='test')
+        # # plt.plot(f1_test_values, 'r--', label='test')
+        # plt.plot(acc_train_values, 'k', label='train')
+        # # plt.plot(f1_train_values, 'k--', label='train')
+        # plt.savefig(fig_name, dpi=330, bbox_inches='tight', pad_inches = 0.25)
 
 end = time.time()
 
@@ -196,7 +201,9 @@ print(f'Epoch: {epoch:03d}, Train Acc: {train_acc:.4f}, Test Acc: {test_acc:.4f}
 
 print(f'Elapsed time: {(end-init)/60} min')
 
+
 plt.savefig(fig_name, dpi=330, bbox_inches='tight',  pad_inches = 0.25)
+
 
 
 plt.clf()
